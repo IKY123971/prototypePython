@@ -1,0 +1,126 @@
+import pygame
+import random
+
+# Inisialisasi Pygame
+pygame.init()
+
+# Warna
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+CYAN = (0, 255, 255)
+MAGENTA = (255, 0, 255)
+YELLOW = (255, 255, 0)
+
+# Ukuran layar dan blok
+SCREEN_WIDTH = 300
+SCREEN_HEIGHT = 600
+BLOCK_SIZE = 30
+
+# Inisialisasi layar
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Tetris")
+
+# Fungsi untuk menggambar blok
+def draw_block(x, y, color):
+    pygame.draw.rect(screen, color, (x, y, BLOCK_SIZE, BLOCK_SIZE))
+
+# Kelas untuk bentuk blok
+class Tetromino:
+    SHAPES = [
+        [[1, 1, 1, 1]],
+        [[1, 1, 1], [1]],
+        [[1, 1, 1], [0, 0, 1]],
+        [[1, 1, 1], [0, 1]],
+        [[1, 1], [1, 1]],
+        [[1, 1, 0], [0, 1, 1]],
+        [[0, 1, 1], [1, 1]]
+    ]
+
+    def __init__(self):
+        self.shape = random.choice(self.SHAPES)
+        self.color = random.choice([RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW])
+
+        self.x = SCREEN_WIDTH // 2 - len(self.shape[0]) * BLOCK_SIZE // 2
+        self.y = 0
+
+    def rotate(self):
+        self.shape = list(zip(*self.shape[::-1]))
+
+    def move_down(self):
+        self.y += BLOCK_SIZE
+
+    def move_left(self):
+        self.x -= BLOCK_SIZE
+
+    def move_right(self):
+        self.x += BLOCK_SIZE
+
+    def draw(self):
+        for i, row in enumerate(self.shape):
+            for j, cell in enumerate(row):
+                if cell:
+                    draw_block(self.x + j * BLOCK_SIZE, self.y + i * BLOCK_SIZE, self.color)
+
+# Fungsi untuk menggambar papan permainan
+def draw_board(board):
+    for i, row in enumerate(board):
+        for j, cell in enumerate(row):
+            if cell:
+                draw_block(j * BLOCK_SIZE, i * BLOCK_SIZE, cell)
+
+# Fungsi utama permainan
+def main():
+    clock = pygame.time.Clock()
+    game_over = False
+
+    current_tetromino = Tetromino()
+    board = [[0] * (SCREEN_WIDTH // BLOCK_SIZE) for _ in range(SCREEN_HEIGHT // BLOCK_SIZE)]
+
+    while not game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_over = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    current_tetromino.move_left()
+                elif event.key == pygame.K_RIGHT:
+                    current_tetromino.move_right()
+                elif event.key == pygame.K_DOWN:
+                    current_tetromino.move_down()
+                elif event.key == pygame.K_UP:
+                    current_tetromino.rotate()
+
+        # Periksa tabrakan dengan tepi atau blok lain
+        if current_tetromino.y + len(current_tetromino.shape) * BLOCK_SIZE > SCREEN_HEIGHT or \
+           any(board[(current_tetromino.y + i) // BLOCK_SIZE][(current_tetromino.x + j) // BLOCK_SIZE] for i, row in enumerate(current_tetromino.shape) for j, cell in enumerate(row)):
+            # Jika ada tabrakan, tambahkan blok ke papan dan buat blok baru
+            for i, row in enumerate(current_tetromino.shape):
+                for j, cell in enumerate(row):
+                    if cell:
+                        board[(current_tetromino.y + i) // BLOCK_SIZE][(current_tetromino.x + j) // BLOCK_SIZE] = current_tetromino.color
+            current_tetromino = Tetromino()
+
+        # Hapus baris yang penuh
+        for i, row in enumerate(board):
+            if all(row):
+                del board[i]
+                board.insert(0, [0] * (SCREEN_WIDTH // BLOCK_SIZE))
+
+        # Gambar background dan blok-blok di layar
+        screen.fill(BLACK)
+        draw_board(board)
+        current_tetromino.draw()
+
+        # Perbarui layar
+        pygame.display.flip()
+
+        # Atur kecepatan permainan
+        clock.tick(5)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
